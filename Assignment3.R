@@ -16,7 +16,8 @@ Apps_desc <- Apps_data[,4]                 #Descriptions are recorded in the 4th
 n_desc <- length(Apps_desc)                #Check the number of app descriptions
 n_desc
 
-## Data Preparation ##
+##---Data Preparation---##
+
 # Use the First 300 characters #
 test_300 <- substr(Apps_desc[1],0,300) #Test to extract first 300 chars
 test_300
@@ -36,7 +37,8 @@ Apps_300[1:5]
 Apps <- Corpus(VectorSource(Apps_300))
 Apps # Return Corpus Information
 
-## Parsing ##
+##---Parsing---##
+
 # Convert upper-case letters to lower-case letters #
 Apps  <- tm_map(Apps, content_transformer(tolower)) 
 as.character(Apps[[1]])
@@ -135,25 +137,29 @@ inspect(Apps[1:3])
 # Return first 10 description after parsing #
 inspect(Apps[1:10])
 
-## Stemming ##
+##---Stemming---##
+
 Apps <- tm_map(Apps, PlainTextDocument)  # Remove common word endings ("es", "ed", "s", "ing")
 Apps <- tm_map(Apps, stemDocument)
 
 as.character(Apps[[1]])
 
-## Create a DTM without restrictions ##
+##---Create a DTM without restrictions---##
+
 dtm_Apps <- DocumentTermMatrix(Apps)
 dtm_Apps
 inspect(dtm_Apps)
 
-## Create a DTM with restrictions ##
+##---Create a DTM with restrictions---##
+
 dtm_Apps_Ctrl <- DocumentTermMatrix(Apps, control=list(wordLength=c(3,10), bounds=list(global=c(20,500)))) #terms with 3-10 chars in 50-500 app desc
 dtm_Apps_Ctrl
+
 # Number of terms selected #
 # Sparsity Rate of Terms #
 inspect(dtm_Apps_Ctrl[1:10,1:10]) # DTM for the first 10 descriptions with the first 19 terms
 
-## Frequency of terms ##
+##---Frequency of terms---##
 
 # Find the terms that occur at least 20 times #
 findFreqTerms(dtm_Apps_Ctrl, 20)
