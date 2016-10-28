@@ -265,21 +265,10 @@ sort(Apps_HC_Cut2)
 ### Regression ###
 
 ## Data Preparation ##
-# Count the number of terms in a description ##
+
 library(stringr)
-Num_Terms <- matrix(data = 0, n_desc,1)
 
-for(j in 1:n_desc){
-  str1 <- Apps[[j]]
-  str2 <- str_match_all(str1,"\\S+")
-  Num_Terms[j] <- length(str2[[1]])
-}
-
-head(Num_Terms)
-
-## Compute Cluster Scores ##
 # Identify the terms for each cluster #
-
 # K-means
 cluster1 <- dtm_Apps_cluster[,c("percent","sale","limit","nintyninec")]
 cluster2 <- dtm_Apps_cluster[,c("arcad","featur","fun","level","avail","hit","experi","take","ever","like")]
@@ -293,43 +282,50 @@ cluster1 <- dtm_Apps_cluster[,c("percent","sale","limit","nintyninec")]
 cluster2 <- dtm_Apps_cluster[,c("arcad","top","featur","fun","level","avail","hit","experi","take","ever","like")]
 cluster3 <- dtm_Apps_cluster[,c("numberon","download","million")]
 
-
-head(cluster1)
-head(cluster2)
-head(cluster3)
-
-# Sums #
-C1_Sum <- rowSums(cluster1)
-C2_Sum <- rowSums(cluster2)
-C3_Sum <- rowSums(cluster3)
-C4_Sum <- Num_Terms - (C1_Sum + C2_Sum + C3_Sum)
-
+#--- Create THREE variables characterizing the clusters from clustering ---#
+cluster1 <- ifelse(rowSums(cluster1)>0,1,0)
+cluster2 <- ifelse(rowSums(cluster2)>0,1,0)
+cluster3 <- ifelse(rowSums(cluster3)>0,1,0)
 # Create a Score table #
-Score <- matrix(data = 0, n_desc,4)
-Score[,1] <- as.matrix(C1_Sum)
-Score[,2] <- as.matrix(C2_Sum)
-Score[,3] <- as.matrix(C3_Sum)
-Score[,4] <- as.matrix(C4_Sum)
-
+Score <- matrix(data = 0, n_desc, 3)
+Score[,1] <- as.matrix(cluster1)
+Score[,2] <- as.matrix(cluster2)
+Score[,3] <- as.matrix(cluster3)
 # Name the Columns/Clusters #
-colnames(Score) <- c("Cluster1", "Cluster2", "Cluster3", "Cluster4")
+colnames(Score) <- c("Cluster1", "Cluster2", "Cluster3")
 head(Score)
-
-## Add a Score matrix to the original Data ##
+# Combine Score matrix to the original Data #
 Apps_new <- cbind(Apps_data, Score)
 str(Apps_new)
 
-summary(Apps_new[,c('Rank','Price','Screenshot','Size','StarCurrentVersion','RatingCurrentVersion','Cluster1','Cluster2','Cluster3','Cluster4')])
+#--- Create a variable indicating an app’s age ---#
+year <- as.numeric(substr(Apps_new$ReleaseDate,7,10))
+month <- as.numeric(substr(Apps_new$ReleaseDate,1,2))
+day <- as.numeric(substr(Apps_new$ReleaseDate,4,5))
+NumOfDay <- function(year, month, day){
+  (2012-year)*365 + (12-month)*30 + (31-day) - 24+1
+}
+Apps_new$App_Age <- NumOfDay(year, month, day)
+head(Apps_new$App_Age)
 
-# Variable Transformation #
-Sales <- -log(Apps_new$Rank)
-Log_Rating_Num <- log(Apps_new$RatingCurrentVersion+1)
+#--- Variable Transformation ---#
+# Convert ranking information to Sales
+Apps_new$Sales <- -log(Apps_new$Rank)
+head(Apps_new$Sales)
 
-Apps_new <- cbind(Apps_new,Sales)
-Apps_new <- cbind(Apps_new, Log_Rating_Num)
+#--- Missing Values ---#
+summary(Apps_new)
+Apps_new[is.na(Apps_new$StarCurrentVersion) & is.na(Apps_new$RatingCurrentVersion),]
+Apps_new[is.na(Apps_new$StarCurrentVersion),]$StarCurrentVersion <- mean(Apps_new$StarCurrentVersion, na.rm = TRUE)
+Apps_new[is.na(Apps_new$RatingCurrentVersion),]$RatingCurrentVersion <- mean(Apps_new$RatingCurrentVersion, na.rm = TRUE)
 
-Apps_Reg <- lm(Sales ~ Price + Screenshot + Size + StarCurrentVersion + Log_Rating_Num + Cluster1 + Cluster2+ Cluster3 + Cluster4,data = Apps_new)
+#--- Normalization ---#
+Apps_new$RatingCurrentVersion_log <- log(Apps_new$RatingCurrentVersion)
+Apps_new$App_Age_log <- log(Apps_new$App_Age)
+
+#--- Summary Statistics ---#
+summary(Apps_new[,c('Sales','Price','Screenshot','Size','StarCurrentVersion','RatingCurrentVersion_log','App_Age_log','Cluster1','Cluster2','Cluster3')])
+
+Apps_Reg <- lm(Sales ~ Price + Screenshot + Size + StarCurrentVersion + RatingCurrentVersion_log + App_Age_log + Cluster1 + Cluster2+ Cluster3, data = Apps_new)
 summary(Apps_Reg)
-
-
 
