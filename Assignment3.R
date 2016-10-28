@@ -16,7 +16,7 @@ Apps_desc <- Apps_data[,4]                 #Descriptions are recorded in the 4th
 n_desc <- length(Apps_desc)                #Check the number of app descriptions
 n_desc
 
-##---Data Preparation---##
+##--- Data Preparation ---##
 
 # Use the First 300 characters #
 test_300 <- substr(Apps_desc[1],0,300) #Test to extract first 300 chars
@@ -37,7 +37,7 @@ Apps_300[1:5]
 Apps <- Corpus(VectorSource(Apps_300))
 Apps # Return Corpus Information
 
-##---Parsing---##
+##--- Parsing ---##
 
 # Convert upper-case letters to lower-case letters #
 Apps  <- tm_map(Apps, content_transformer(tolower)) 
@@ -137,29 +137,29 @@ inspect(Apps[1:3])
 # Return first 10 description after parsing #
 inspect(Apps[1:10])
 
-##---Stemming---##
+##--- Stemming ---##
 
 Apps <- tm_map(Apps, PlainTextDocument)  # Remove common word endings ("es", "ed", "s", "ing")
 Apps <- tm_map(Apps, stemDocument)
 
 as.character(Apps[[1]])
 
-##---Create a DTM without restrictions---##
+##--- Create a DTM without restrictions ---##
 
 dtm_Apps <- DocumentTermMatrix(Apps)
 dtm_Apps
 inspect(dtm_Apps)
 
-##---Create a DTM with restrictions---##
+##--- Create a DTM with restrictions ---##
 
 dtm_Apps_Ctrl <- DocumentTermMatrix(Apps, control=list(wordLength=c(3,10), bounds=list(global=c(20,500)))) #terms with 3-10 chars in 50-500 app desc
 dtm_Apps_Ctrl
 
 # Number of terms selected #
 # Sparsity Rate of Terms #
-inspect(dtm_Apps_Ctrl[1:10,1:10]) # DTM for the first 10 descriptions with the first 19 terms
+inspect(dtm_Apps_Ctrl[1:10,1:10]) # DTM for the first 10 descriptions with the first 10 terms
 
-##---Frequency of terms---##
+##--- Frequency of terms ---##
 
 # Find the terms that occur at least 20 times #
 findFreqTerms(dtm_Apps_Ctrl, 20)
@@ -201,19 +201,18 @@ wordcloud(w$word,w$freq, scale=c(3,.1),min.freq=1, max.words=200, random.order=F
 
 ### Clustering ###
 
-## Data Preparation ##
+##--- Data Preparation ---##
 ## Select the number of Terms for Clustering ##
-dtm_Apps_Sparse <- removeSparseTerms(dtm_Apps_Ctrl, 0.93) #??
+dtm_Apps_Sparse <- removeSparseTerms(dtm_Apps_Ctrl, 0.93) # Remove sparse terms with sparsity larger than 93%
 
 dtm_Apps_Sparse
-nrow(dtm_Apps_Sparse); ncol(dtm_Apps_Sparse)
-inspect(dtm_Apps_Sparse)
+dimnames(dtm_Apps_Sparse)$Terms # Display the selected terms
 
-dtm_Apps_Cluster <- as.matrix(dtm_Apps_Sparse)
+dtm_Apps_cluster <- as.matrix(dtm_Apps_Sparse)
 
-## K_Mean Clustering ##
+##--- K_Mean Clustering ---##
 
-# Model 1 - Seed = 1234#
+# Model 1 - Seed = 1234 #
 set.seed(1234)
 Apps_KM1 <- kmeans(t(dtm_Apps_cluster),3) #Set K = 3
 Apps_KM1 #Run K-mean
@@ -234,7 +233,7 @@ plot(1:5, wss[1:5], type="b", xlab="Number of Clusters", ylab="Within Groups Sum
 #type ="b" creates a plot with lines between points #
 wss
 
-## Hierachical Clustering ##
+##--- Hierachical Clustering ---##
 dtm_Apps_cluster <- as.matrix(dtm_Apps_Sparse)
 
 #Calculate the Distance between terms#
@@ -273,16 +272,28 @@ Num_Terms <- matrix(data = 0, n_desc,1)
 for(j in 1:n_desc){
   str1 <- Apps[[j]]
   str2 <- str_match_all(str1,"\\S+")
-  Num_Terms[j] <- length(str2[[1]]) # Why remove str[[2]]?
+  Num_Terms[j] <- length(str2[[1]])
 }
 
 head(Num_Terms)
 
 ## Compute Cluster Scores ##
 # Identify the terms for each cluster #
-cluster1 <- dtm_Apps_cluster[,c("best","download","featur","fun")]
-cluster2 <- dtm_Apps_cluster[,c("percent","sale","limit","nintyninec")]
-cluster3 <- dtm_Apps_cluster[,c("time","now")]
+
+# K-means
+cluster1 <- dtm_Apps_cluster[,c("percent","sale","limit","nintyninec")]
+cluster2 <- dtm_Apps_cluster[,c("arcad","featur","fun","level","avail","hit","experi","take","ever","like")]
+cluster3 <- dtm_Apps_cluster[,c("numberon","download","million","top")]
+# complete
+cluster1 <- dtm_Apps_cluster[,c("limit","nintyninec")]
+cluster2 <- dtm_Apps_cluster[,c("arcad","top","featur","fun","level","avail","hit","experi","take","ever","like","numberon","download","million")]
+cluster3 <- dtm_Apps_cluster[,c("percent","sale")]
+# ward.D
+cluster1 <- dtm_Apps_cluster[,c("percent","sale","limit","nintyninec")]
+cluster2 <- dtm_Apps_cluster[,c("arcad","top","featur","fun","level","avail","hit","experi","take","ever","like")]
+cluster3 <- dtm_Apps_cluster[,c("numberon","download","million")]
+
+
 head(cluster1)
 head(cluster2)
 head(cluster3)
