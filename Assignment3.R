@@ -299,13 +299,7 @@ Apps_new <- cbind(Apps_data, Score)
 str(Apps_new)
 
 #--- Create a variable indicating an app’s age ---#
-year <- as.numeric(substr(Apps_new$ReleaseDate,7,10))
-month <- as.numeric(substr(Apps_new$ReleaseDate,1,2))
-day <- as.numeric(substr(Apps_new$ReleaseDate,4,5))
-NumOfDay <- function(year, month, day){
-  (2012-year)*365 + (12-month)*30 + (31-day) - 24+1
-}
-Apps_new$App_Age <- NumOfDay(year, month, day)
+Apps_new$App_Age <-as.numeric(as.Date(Apps_new$DataDate, "%m,%d,%Y") - as.Date(Apps_new$ReleaseDate, "%m,%d,%Y")) + 1
 head(Apps_new$App_Age)
 
 #--- Variable Transformation ---#
